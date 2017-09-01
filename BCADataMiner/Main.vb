@@ -57,7 +57,6 @@ Public Class Main
         ' NOT USED ANYMORE
         '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-        'this is a change to the test branch
     End Sub
 
     Private Sub btnGetLegacyScores_Click(sender As Object, e As EventArgs) Handles btnGetLegacyScores.Click
