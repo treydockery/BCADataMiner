@@ -1,9 +1,9 @@
 ﻿Imports System.IO
 Imports System.Net
 Imports System.Text
-Imports BCADataMiner.RootObject
+Imports System.Collections.Specialized
+Imports System.Web
 Imports Newtonsoft.Json
-
 
 Public Class Main
 
@@ -54,8 +54,15 @@ Public Class Main
 
     Private Sub Main_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        ' NOT USED ANYMORE
+        'This is used for automatic running from Task Manager
         '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+        Dim myArgs() = Command().Split(" ")
+
+        If myArgs(0) = "Auto=TRUE" Then
+            Me.Show()
+            btnGetLegacyScores_Click(Me, EventArgs.Empty)
+        End If
 
     End Sub
 
@@ -79,7 +86,7 @@ Public Class Main
             GoTo RUN_ROS
         End If
 
-        dtIndustryPEInfo = GetIndustryPEInfo()
+        'dtIndustryPEInfo = GetIndustryPEInfo()
 
         If dtMainSymbolList.Rows.Count = 0 Then
             txtActivityLog.AppendText(Now & " No rows were retreived.  Exiting routine." & vbCrLf)
@@ -92,12 +99,17 @@ Public Class Main
             Application.DoEvents()
             intCounter += 1
             Dim strSymbol As String = myDataRow("strStockSymbol")
+            'Debug
+            'strSymbol = "AAPL"
             strMarketPrice = String.Empty
 
             txtActivityLog.AppendText(Now & " Getting Data for " & strSymbol & ". # " & intCounter & " of " & dtMainSymbolList.Rows.Count & vbCrLf)
 
+            'for debug only
+            'GoTo DEBUG
             '++++++++++++++++++++++++++++++++++++++++++++++
             ' Company Revenue Items #1 and #2
+            'Working
             txtActivityLog.AppendText(Now & " Getting Company Revenue." & vbCrLf)
             Dim bitCompanyRevenueSucessful As Boolean = GetCompanyRevenueAndEPS(strSymbol)
             If bitCompanyRevenueSucessful = False Then
@@ -107,23 +119,39 @@ Public Class Main
 
             '++++++++++++++++++++++++++++++++++++++++++++++
             ' Return on Equity #3
-            txtActivityLog.AppendText(Now & " Getting Return on Equity." & vbCrLf)
-            Dim bitROESucessful As Boolean = GetROE(strSymbol)
-            If bitROESucessful = False Then
-                txtActivityLog.AppendText(Now & " There was an issue getting Return on Equity for " & strSymbol & "." & vbCrLf)
+
+            ' NOT WORKING !!!! Moved to another Section
+
+            'txtActivityLog.AppendText(Now & " Getting Return on Equity." & vbCrLf)
+            'Dim bitROESucessful As Boolean = GetROE(strSymbol)
+            'If bitROESucessful = False Then
+            '    txtActivityLog.AppendText(Now & " There was an issue getting Return on Equity for " & strSymbol & "." & vbCrLf)
+            'End If
+            'Application.DoEvents()
+
+            '++++++++++++++++++++++++++++++++++++++++++++++
+            ' Days to Cover. See Document
+            ' Working
+            txtActivityLog.AppendText(Now & " Getting Days To Cover / Short Interest." & vbCrLf)
+            Dim bitDaysToCoverSucessful As Boolean = GetDaysToCover(strSymbol)
+            If bitDaysToCoverSucessful = False Then
+                txtActivityLog.AppendText(Now & " There was an issue getting Days To Cover / Short Interest for " & strSymbol & "." & vbCrLf)
+            End If
+            Application.DoEvents()
+            '
+            '++++++++++++++++++++++++++++++++++++++++++++++
+            ' Analyst Recommendations
+            ' Working
+            txtActivityLog.AppendText(Now & " Getting Zacks Analyst Recommendations." & vbCrLf)
+            Dim bitZacksAnalystRecommendations As Boolean = GetZacksAnalystRecommendationsAndIndustryComparison(strSymbol)
+            If bitZacksAnalystRecommendations = False Then
+                txtActivityLog.AppendText(Now & " There was an issue getting Zacks Analyst Recommendations for " & strSymbol & "." & vbCrLf)
             End If
             Application.DoEvents()
 
             '++++++++++++++++++++++++++++++++++++++++++++++
-            ' All this used to be done from Yahoo.   But they changed the site.
-            ' Zacks is better anyway.
-            ' Analyst Recommendations, Earnings Growth
-            ' Items #4, 7
-            '++++++++++++++++++++++++++++++++++++++++++++++
-            ' Analyst Recommendations, Earnings Growth
-            ' Items #8, and forward PE
-            '++++++++++++++++++++++++++++++++++++++++++++++
-            ' #9.  Industry Earnings
+            ' forward PE
+            ' working
             txtActivityLog.AppendText(Now & " Getting Full Company Report From Zacks." & vbCrLf)
             Dim bitFullCompanyReportFromZacksSucessful As Boolean = GetFullCompanyReportFromZacks(strSymbol)
             If bitFullCompanyReportFromZacksSucessful = False Then
@@ -132,7 +160,18 @@ Public Class Main
             Application.DoEvents()
 
             '++++++++++++++++++++++++++++++++++++++++++++++
+            ' Earnings Growth
+            ' Working
+            txtActivityLog.AppendText(Now & " Getting Earnings Growth Report From Zacks." & vbCrLf)
+            Dim bitEarningsGrowthFromZacksSucessful As Boolean = GetEarningsGrowthFromZacks(strSymbol)
+            If bitEarningsGrowthFromZacksSucessful = False Then
+                txtActivityLog.AppendText(Now & " There was an issue getting Earnings Growth Report From Zacks for " & strSymbol & "." & vbCrLf)
+            End If
+            Application.DoEvents()
+
+            '++++++++++++++++++++++++++++++++++++++++++++++
             ' Earnings Surprises #5
+            ' Working!!!
             txtActivityLog.AppendText(Now & " Getting Earnings Surprises." & vbCrLf)
             Dim bitEarningsSurprisesSucessful As Boolean = GetEarningsSurprises(strSymbol)
             If bitEarningsSurprisesSucessful = False Then
@@ -142,6 +181,7 @@ Public Class Main
 
             '++++++++++++++++++++++++++++++++++++++++++++++
             ' Earnings Forecast #6
+            'Working!!
             txtActivityLog.AppendText(Now & " Getting Earnings Forecast." & vbCrLf)
             Dim bitEarningsForecastSucessful As Boolean = GetEarningsForecast(strSymbol)
             If bitEarningsSurprisesSucessful = False Then
@@ -151,6 +191,7 @@ Public Class Main
 
             '++++++++++++++++++++++++++++++++++++++++++++++
             ' #11. Insider Trading
+            'Working!!!
             txtActivityLog.AppendText(Now & " Getting Insider Trading" & vbCrLf)
             Dim bitInsideTrading As Boolean = GetInsideTrading(strSymbol)
             If bitInsideTrading = False Then
@@ -160,6 +201,10 @@ Public Class Main
 
             '++++++++++++++++++++++++++++++++++++++++++++++
             ' #12. Weighted Alpha
+            ' Working
+
+            'DEBUG:
+
             txtActivityLog.AppendText(Now & " Getting  Weighted Alpha" & vbCrLf)
             Dim bitWeightedAlpha As Boolean = GetWeightedAlpha(strSymbol)
             If bitWeightedAlpha = False Then
@@ -167,8 +212,11 @@ Public Class Main
             End If
             Application.DoEvents()
 
+            'For Debug only
+            ' Continue For
             '++++++++++++++++++++++++++++++++++++++++++++++
             ' #Calulate the score and put into the table
+            ' Working
             txtActivityLog.AppendText(Now & " Calculating Overall Score" & vbCrLf)
             Dim bitCalculateOverallScore As Boolean = CalculateOverallScore(strSymbol)
             If bitCalculateOverallScore = False Then
@@ -177,9 +225,10 @@ Public Class Main
             Application.DoEvents()
 
             '++++++++++++++++++++++++++++++++++++++++++++++
-            ' #Calulate the target price
-            'txtLegacyScoreActivityLog.AppendText(Now & " Calculating Target Price" & vbCrLf)
-            'Dim bitCalculateTargetPrice As Boolean = CalculateTargetPrice(strSymbol)
+            ' #Get Analyst price Targets
+            ' Working
+            txtActivityLog.AppendText(Now & " Getting Analyst Price Targets" & vbCrLf)
+            Dim bitGetTargetPrice As Boolean = GetBCATargetPrice(strSymbol)
             'If bitCalculateTargetPrice = False Then
             '    txtLegacyScoreActivityLog.AppendText(Now & " There was an issue Calculating Target Price for " & strSymbol & "." & vbCrLf)
             'End If
@@ -187,6 +236,7 @@ Public Class Main
 
             '++++++++++++++++++++++++++++++++++++++++++++++
             ' #Get the Next earnings date
+            ' Working
             txtActivityLog.AppendText(Now & " Getting the Expected Earnings Date" & vbCrLf)
             Dim bitExpEarningsDate As Boolean = GetExpEarningsDate(strSymbol)
             If bitExpEarningsDate = False Then
@@ -195,7 +245,8 @@ Public Class Main
             Application.DoEvents()
 
             '++++++++++++++++++++++++++++++++++++++++++++++
-            ' #Get the PE
+            ' #Get the PE and ROE
+            ' Working
             txtActivityLog.AppendText(Now & " Getting the PE From Zacks" & vbCrLf)
             Dim bitPEFromZacks As Boolean = GetPEFromZacks(strSymbol)
             If bitPEFromZacks = False Then
@@ -206,10 +257,10 @@ Public Class Main
             ' #Get the IV
 
             txtActivityLog.AppendText(Now & " Getting the IV From CBOE" & vbCrLf)
-            Dim bitIVFromCBOE As Boolean = GetIVFromCBOE(strSymbol)
-            If bitIVFromCBOE = False Then
-                txtActivityLog.AppendText(Now & " There was an issue Getting the IV From CBOE." & vbCrLf)
-            End If
+            'Dim bitIVFromCBOE As Boolean = GetIVFromCBOE(strSymbol)
+            'If bitIVFromCBOE = False Then
+            '    txtActivityLog.AppendText(Now & " There was an issue Getting the IV From CBOE." & vbCrLf)
+            'End If
 
         Next
         '++++++++++++++++++++++++++++++++++++++++++++++
@@ -255,7 +306,8 @@ RUN_RS:
                 Dim strSymbol As String = myDataRow("strStockSymbol")
 
                 txtActivityLog.AppendText(Now & " Calculating Relative Strength for " & strSymbol & ". # " & intCounter & " of " & dtMainSymbolList.Rows.Count & vbCrLf)
-                Dim bitRelativeStrengthSucessful As Boolean = CalculateRelativeStrength(strSymbol)
+                'Dim bitRelativeStrengthSucessful As Boolean = CalculateRelativeStrength(strSymbol)
+                Dim bitRelativeStrengthSucessful As Boolean = CalculateRelativeStrengthJSON(strSymbol)
                 If bitRelativeStrengthSucessful = False Then
                     txtActivityLog.AppendText(Now & " There was an issue getting Relative Strength for " & strSymbol & "." & vbCrLf)
                 End If
@@ -368,8 +420,6 @@ RUN_PI:
                     strPriorStrikeLevel = myCallOptionContract.strike.fmt.ToString
                 End If
             Next
-
-
 
             'gotta step backwards through this one. have to use for not each
             For intPutCounter As Integer = (myCorrectContractOptionData.optionChain.result(0).options(0).puts.Count - 1) To 0 Step -1
@@ -1114,13 +1164,25 @@ DONE:
         Dim strURLEncodedSymbol As String = strSymbol.Replace("/", "%27")
         strURLEncodedSymbol = strURLEncodedSymbol.Replace(".", "%27")
 
-        Dim URI As String = "http://fundamentals.nasdaq.com/redpage.asp?selected=" & strURLEncodedSymbol
+        Dim URI As String = "https://fundamentals.nasdaq.com/redpage.asp?selected=" & strURLEncodedSymbol
 
-        Dim webClient As New WebClient()
         strResponseString = String.Empty
 
-        Dim intServerRetry As Integer = 0
+        Dim webClient As New WebClient()
 
+        ServicePointManager.Expect100Continue = True
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+
+        webClient.Headers.Add(HttpRequestHeader.Host, "www.nasdaq.com")
+        webClient.Headers.Add(HttpRequestHeader.UserAgent, "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Mobile Safari/537.36")
+        webClient.Headers.Add(HttpRequestHeader.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
+        'these didnt work ugh....
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36
+        'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Mobile Safari/537.36
+        webClient.Headers.Add(HttpRequestHeader.AcceptEncoding, "deflate")
+        webClient.Headers.Add(HttpRequestHeader.AcceptLanguage, "en-US,en;q=0.9")
+
+        Dim intServerRetry As Integer = 0
         Dim intRetryNumber As Integer = 0
 RETRY:
         Try
@@ -1462,12 +1524,25 @@ RETRY:
         Dim strURLEncodedSymbol As String = strSymbol.Replace("/", "-")
         strURLEncodedSymbol = strURLEncodedSymbol.Replace(".", "-")
 
-        Dim URI As String = "http://www.nasdaq.com/symbol/" & strURLEncodedSymbol.ToLower & "/financials?query=ratios"
+        Dim URI As String = "https://www.nasdaq.com/symbol/" & strURLEncodedSymbol.ToLower & "/financials?query=ratios"
         'symbol has to be lower case
         'http://www.nasdaq.com/symbol/aa/financials?query=ratios
 
-        Dim webClient As New WebClient()
         strResponseString = String.Empty
+
+        Dim webClient As New WebClient()
+
+        ServicePointManager.Expect100Continue = True
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+
+        webClient.Headers.Add(HttpRequestHeader.Host, "www.nasdaq.com")
+        webClient.Headers.Add(HttpRequestHeader.UserAgent, "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Mobile Safari/537.36")
+        webClient.Headers.Add(HttpRequestHeader.Accept, "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8")
+        'these didnt work ugh....
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36
+        'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Mobile Safari/537.36
+        webClient.Headers.Add(HttpRequestHeader.AcceptEncoding, "deflate")
+        webClient.Headers.Add(HttpRequestHeader.AcceptLanguage, "en-US,en;q=0.9")
 
         Dim intServerRetry As Integer = 0
 RETRY:
@@ -1521,7 +1596,12 @@ RETRY:
             Return False
         End If
 
+        If strResponseString.Contains(">DATA IS CURRENTLY NOT AVAILABLE</DIV>") Then
+            txtActivityLog.AppendText(Now & " >DATA IS CURRENTLY NOT AVAILABLE " & strSymbol & vbCrLf)
 
+            Return False
+        End If
+        '
         ' walk down the page and put the variables into the array
         ' ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         ' ROE #3
@@ -1589,28 +1669,19 @@ RETRY:
         Return bitSucessful
     End Function
 
-    Public Function GetEarningsSurprises(strSymbol As String) As Boolean
+    Public Function GetDaysToCover(strSymbol) As Boolean
         Dim bitSucessful As Boolean = True
-        Dim stWorkString As String = String.Empty
-        Dim i As Integer = 1
-        Dim j As Integer = 0
-        Dim intQtrNumber As Integer = 0
-
-        Dim strCurrentEarningsSurprise As String = String.Empty
-        Dim strPastEarningsSurprise1Ago As String = String.Empty
-        Dim strPastEarningsSurprise2Ago As String = String.Empty
-        Dim strPastEarningsSurprise3Ago As String = String.Empty
-
-        Dim strEarningsSurpriseScore As String = "FAIL"
 
         Dim strURLEncodedSymbol As String = strSymbol.Replace("/", "-")
         strURLEncodedSymbol = strURLEncodedSymbol.Replace(".", "-")
-
-        Dim URI As String = "http://www.nasdaq.com/symbol/" & strURLEncodedSymbol.ToLower & "/earnings-surprise"
-        'symbol has to be lower case
-        'http://www.nasdaq.com/symbol/aapl/earnings-surprise
+        'https://finance.yahoo.com/quote/AAPL/key-statistics?p=AAPL
+        Dim URI As String = "https://finance.yahoo.com/quote/" & strURLEncodedSymbol & "/key-statistics?p=" & strURLEncodedSymbol
 
         Dim webClient As New WebClient()
+
+        ServicePointManager.Expect100Continue = True
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+
         strResponseString = String.Empty
 
         Dim intServerRetry As Integer = 0
@@ -1644,74 +1715,165 @@ RETRY:
         End Try
 
         If strResponseString = String.Empty Then
-            txtActivityLog.AppendText(Now & " NO DATA WAS RETURNED FOR " & strSymbol & vbCrLf)
-
             Return False
         End If
-        If strResponseString.Contains("INSUFFICIENT INFORMATION TO DISPLAY THE GRAPH FOR THIS SYMBOL.") Then
-            txtActivityLog.AppendText(Now & " INSUFFICIENT INFORMATION TO DISPLAY THE GRAPH FOR THIS SYMBOL. FOR " & strSymbol & vbCrLf)
+        'first find the start of the data
 
-            Return False
-        End If
-        If strResponseString.Contains("THERE IS CURRENTLY NO DATA FOR THIS SYMBOL.") Then
-            txtActivityLog.AppendText(Now & " THERE IS CURRENTLY NO DATA FOR " & strSymbol & vbCrLf)
+        Dim i As Integer = 1
+        Dim j As Integer = -1
 
-            Return False
-        End If
+        Dim strSharesShort As String = String.Empty
+        Dim strDaysToCover As String
+        Dim strDaysToCoverScore As String = "FAIL"
 
-        If strResponseString.Contains("THIS SYMBOL CHANGED.") Then
-            txtActivityLog.AppendText(Now & " THIS SYMBOL CHANGED " & strSymbol & vbCrLf)
-
-            Return False
-        End If
-
-
-        ' walk down the page and put the variables into the array
-        ' ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        ' EarningsSurprise current
         Try
+            i = InStr(i, strResponseString, ">SHARES SHORT (")  'Start of section to grab
+            i = InStr(i + 1, strResponseString, "<TD")
+            'i = InStr(i + 1, strResponseString, "<SPAN")
+            i = InStr(i + 1, strResponseString, ">")
+            j = InStr(i, strResponseString, "</")
+            strSharesShort = Mid(strResponseString, (i + 1), (j - i - 1))
 
+
+            'If strSharesShort <> "N/A" Then
+            '    i = 1
+            '    i = InStr(i, strResponseString, ">SHARES SHORT</")  'Start of section to grab
+            '    i = InStr(i + 1, strResponseString, "<TD")
+            '    i = InStr(i + 1, strResponseString, ">")
+            '    j = InStr(i, strResponseString, "</")
+            '    strSharesShort = Mid(strResponseString, (i + 1), (j - i - 1))
+            'End If
             i = 1
 
-            i = InStr(i, strResponseString, "<TH>% SURPRISE</TH>")  'Start of section to grab
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
+            i = InStr(i, strResponseString, ">SHORT RATIO (")  'Start of section to grab
+            i = InStr(i + 1, strResponseString, "<TD")
             i = InStr(i + 1, strResponseString, ">")
-            j = InStr(i, strResponseString, "</TD")
-            strCurrentEarningsSurprise = Mid(strResponseString, (i + 1), (j - i - 1))
+            j = InStr(i, strResponseString, "</")
+            strDaysToCover = Mid(strResponseString, (i + 1), (j - i - 1))
 
-            i = j + 1
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, ">")
-            j = InStr(i, strResponseString, "</TD")
-            strPastEarningsSurprise1Ago = Mid(strResponseString, (i + 1), (j - i - 1))
+            If strSharesShort = "N/A" Then
+                strDaysToCover = "99"
+            ElseIf IsNumeric(strDaysToCover) = False Then
+                strDaysToCover = "99"
+            ElseIf strDaysToCover < 2 Then
+                strDaysToCoverScore = "PASS"
+            End If
 
-            i = j + 1
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, ">")
-            j = InStr(i, strResponseString, "</TD")
-            strPastEarningsSurprise2Ago = Mid(strResponseString, (i + 1), (j - i - 1))
+            Dim params(3) As SqlClient.SqlParameter
+            params(0) = New SqlClient.SqlParameter("@strSymbol", SqlDbType.VarChar)
+            params(0).Value = strSymbol
+            params(1) = New SqlClient.SqlParameter("@strDaysToCover", SqlDbType.VarChar)
+            params(1).Value = strDaysToCover
+            params(2) = New SqlClient.SqlParameter("@strDaysToCoverScore", SqlDbType.VarChar)
+            params(2).Value = strDaysToCoverScore
+            params(3) = New SqlClient.SqlParameter("@dProcessed", SqlDbType.Date)
+            params(3).Value = Today.ToShortDateString
 
-            i = j + 1
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
+            Dim dsSPResults As DataSet = RunSP("dbo.spUpdateDaysToCover", params)
+        Catch ex As Exception
+            Return False
+        End Try
+
+
+        'Get PEG From here also
+
+        '>PEG RATIO
+        Dim strPEGRatio As String
+        Try
+            i = 1
+            i = InStr(i, strResponseString, ">PEG RATIO")  'Start of section to grab
+            i = InStr(i + 1, strResponseString, "<TD")
             i = InStr(i + 1, strResponseString, ">")
-            j = InStr(i, strResponseString, "</TD")
-            strPastEarningsSurprise3Ago = Mid(strResponseString, (i + 1), (j - i - 1))
+            j = InStr(i, strResponseString, "</")
+            strPEGRatio = Mid(strResponseString, (i + 1), (j - i - 1))
+
+            If IsNumeric(strPEGRatio) = False Then
+                strPEGRatio = "99"
+            End If
+
+            Dim strPEGRatioScore As String = "FAIL"
+            If strPEGRatio > 0 AndAlso strPEGRatio < 1.0 Then
+                strPEGRatioScore = "PASS"
+            End If
+
+            Dim paramsPEG(3) As SqlClient.SqlParameter
+            paramsPEG(0) = New SqlClient.SqlParameter("@strSymbol", SqlDbType.VarChar)
+            paramsPEG(0).Value = strSymbol
+            paramsPEG(1) = New SqlClient.SqlParameter("@strPEGRatio", SqlDbType.VarChar)
+            paramsPEG(1).Value = strPEGRatio
+            paramsPEG(2) = New SqlClient.SqlParameter("@strPEGRatioScore", SqlDbType.VarChar)
+            paramsPEG(2).Value = strPEGRatioScore
+            paramsPEG(3) = New SqlClient.SqlParameter("@dProcessed", SqlDbType.Date)
+            paramsPEG(3).Value = Today.ToShortDateString
+
+            Dim dsSPResultsPEG As DataSet = RunSP("dbo.spUpdatePEGRatio", paramsPEG)
+
+        Catch ex As Exception
+            Return False
+        End Try
+        Return bitSucessful
+    End Function
+    Public Function GetEarningsSurprises(strSymbol As String) As Boolean
+        Dim bitSucessful As Boolean = True
+        Dim stWorkString As String = String.Empty
+        Dim i As Integer = 1
+        Dim j As Integer = 0
+        Dim intQtrNumber As Integer = 0
+
+        Dim strCurrentEarningsSurprise As String = String.Empty
+        Dim strPastEarningsSurprise1Ago As String = String.Empty
+        Dim strPastEarningsSurprise2Ago As String = String.Empty
+        Dim strPastEarningsSurprise3Ago As String = String.Empty
+
+        Dim strEarningsSurpriseScore As String = "FAIL"
+
+        Dim strURLEncodedSymbol As String = strSymbol.Replace("/", "-")
+        strURLEncodedSymbol = strURLEncodedSymbol.Replace(".", "-")
+        ServicePointManager.SecurityProtocol = (SecurityProtocolType.Tls Or (SecurityProtocolType.Tls11 Or SecurityProtocolType.Tls12))
+
+        Try
+            ''https://api.nasdaq.com/api/company/AAPL/earnings-surprise
+            Dim httpGetData = CType(WebRequest.Create("https://api.nasdaq.com/api/company/" & strURLEncodedSymbol.ToLower & "/earnings-surprise"), HttpWebRequest)
+            httpGetData.Host = "api.nasdaq.com"
+            httpGetData.UserAgent = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Mobile Safari/537.36"
+            httpGetData.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+            httpGetData.Headers.Add(HttpRequestHeader.AcceptEncoding, "deflate")
+            httpGetData.Headers.Add(HttpRequestHeader.AcceptLanguage, "en-US,en;q=0.9")
+
+            Dim httpDataResponse As HttpWebResponse = CType(httpGetData.GetResponse, HttpWebResponse)
+
+            Dim encode As System.Text.Encoding = System.Text.Encoding.GetEncoding("utf-8")
+            ' Pipes the response stream to a higher level stream reader with the required encoding format. 
+            Dim receiveStream As Stream = httpDataResponse.GetResponseStream()
+            Dim readStream As New StreamReader(receiveStream, encode)
+            Dim strTheRawJSON As String = readStream.ReadToEnd
+            readStream.Close()
+            'Parse the Raw Json and put into database
+            Dim myData = JsonConvert.DeserializeObject(strTheRawJSON)
+
+            Try
+                strCurrentEarningsSurprise = myData.GetValue("data").Item("earningsSurpriseTable").Item("rows")(0).Item("percentageSurprise").ToString.ToUpper
+            Catch ex As Exception
+                strCurrentEarningsSurprise = "N/A"
+            End Try
+
+            Try
+                strPastEarningsSurprise1Ago = myData.GetValue("data").Item("earningsSurpriseTable").Item("rows")(1).Item("percentageSurprise").ToString.ToUpper
+            Catch ex As Exception
+                strPastEarningsSurprise1Ago = "N/A"
+            End Try
+
+            Try
+                strPastEarningsSurprise2Ago = myData.GetValue("data").Item("earningsSurpriseTable").Item("rows")(2).Item("percentageSurprise").ToString.ToUpper
+            Catch ex As Exception
+                strPastEarningsSurprise2Ago = "N/A"
+            End Try
+
+            Try
+                strPastEarningsSurprise3Ago = myData.GetValue("data").Item("earningsSurpriseTable").Item("rows")(3).Item("percentageSurprise").ToString.ToUpper
+            Catch ex As Exception
+                strPastEarningsSurprise3Ago = "N/A"
+            End Try
 
             If IsNumeric(strCurrentEarningsSurprise) Then
                 Try
@@ -1754,9 +1916,10 @@ RETRY:
 
                 Dim dsSPResults As DataSet = RunSP("dbo.spUpdateEarningsSurprise", params)
             End If
-        Catch ex As Exception
-
+        Catch e As Exception
+            Console.WriteLine(e.Message)
         End Try
+
         '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
         Return bitSucessful
@@ -1778,148 +1941,88 @@ RETRY:
         Dim strURLEncodedSymbol As String = strSymbol.Replace("/", "-")
         strURLEncodedSymbol = strURLEncodedSymbol.Replace(".", "-")
 
-        Dim URI As String = "http://www.nasdaq.com/symbol/" & strURLEncodedSymbol.ToLower & "/earnings-forecast"
-        'symbol has to be lower case
-        'http://www.nasdaq.com/symbol/aapl/earnings-forecast
-
-        Dim webClient As New WebClient()
         strResponseString = String.Empty
 
-        Dim intServerRetry As Integer = 0
-RETRY:
-        Try
-            strResponseString = webClient.DownloadString(URI).ToUpper
-        Catch ex As WebException
-            If TypeOf ex.Response Is HttpWebResponse Then
-                Select Case DirectCast(ex.Response, HttpWebResponse).StatusCode
-                    Case HttpStatusCode.NotFound
-                        txtActivityLog.AppendText(Now & HttpStatusCode.NotFound & vbCrLf)
+        ServicePointManager.Expect100Continue = True
+        'ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+        System.Net.ServicePointManager.SecurityProtocol = (SecurityProtocolType.Tls Or (SecurityProtocolType.Tls11 Or SecurityProtocolType.Tls12))
 
-                    Case HttpStatusCode.InternalServerError
-                        If intServerRetry = 0 Then
-                            txtActivityLog.AppendText(Now & ex.Message & " Trying one more time." & vbCrLf)
-                            intServerRetry += 1
-                            Dim SW2 As New Stopwatch
-                            SW2.Restart()
-                            Do
-
-                            Loop Until SW2.ElapsedMilliseconds >= 2000
-
-                            GoTo RETRY
-                        End If
-
-                    Case Else
-                        txtActivityLog.AppendText(Now & ex.Message & vbCrLf)
-                        'Throw ex
-                End Select
-            End If
-        End Try
-
-        If strResponseString = String.Empty Then
-            txtActivityLog.AppendText(Now & " NO DATA WAS RETURNED FOR " & strSymbol & vbCrLf)
-
-            Return False
-        End If
-        '
-        If strResponseString.Contains("NO DATA AVAIABLE.") Then
-            txtActivityLog.AppendText(Now & " THIS FEATURE CURRENTLY IS UNAVAILABLE FOR " & strSymbol & vbCrLf)
-
-            Return False
-        End If
-        If strResponseString.Contains(">THIS IS AN UNKNOWN SYMBOL") Then
-            txtActivityLog.AppendText(Now & " THIS FEATURE CURRENTLY IS UNAVAILABLE FOR " & strSymbol & vbCrLf)
-
-            Return False
-        End If
-        If strResponseString.Contains("THERE IS CURRENTLY NO DATA FOR THIS SYMBOL.") Then
-            txtActivityLog.AppendText(Now & " THERE IS CURRENTLY NO DATA FOR " & strSymbol & vbCrLf)
-
-            Return False
-        End If
-
-        If strResponseString.Contains("THIS SYMBOL CHANGED.") Then
-            txtActivityLog.AppendText(Now & " THIS SYMBOL CHANGED " & strSymbol & vbCrLf)
-
-            Return False
-        End If
-
-
-        ' walk down the page and put the variables into the array
-        ' ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        ' EarningsForecast current
         Try
 
-            i = 1
+            'https://api.nasdaq.com/api/company/AAPL/earnings-surprise
+            Dim httpGetData = CType(WebRequest.Create("https://api.nasdaq.com/api/analyst/" & strURLEncodedSymbol.ToLower & "/earnings-forecast"), HttpWebRequest)
+            httpGetData.Host = "api.nasdaq.com"
+            httpGetData.UserAgent = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Mobile Safari/537.36"
+            httpGetData.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+            httpGetData.Headers.Add(HttpRequestHeader.AcceptEncoding, "deflate")
+            httpGetData.Headers.Add(HttpRequestHeader.AcceptLanguage, "en-US,en;q=0.9")
+            Dim httpDataResponse As HttpWebResponse = CType(httpGetData.GetResponse, HttpWebResponse)
 
-            i = InStr(i, strResponseString, "<H2>YEARLY EARNINGS FORECASTS</H2>")  'Start of section to grab
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, ">")
-            j = InStr(i, strResponseString, "</TD")
-            strCurrentEarningsForecast = Mid(strResponseString, (i + 1), (j - i - 1))
+            Dim encode As System.Text.Encoding = System.Text.Encoding.GetEncoding("utf-8")
+            ' Pipes the response stream to a higher level stream reader with the required encoding format. 
+            Dim receiveStream As Stream = httpDataResponse.GetResponseStream()
+            Dim readStream As New StreamReader(receiveStream, encode)
+            Dim strTheRawJSON As String = readStream.ReadToEnd
+            readStream.Close()
+            'Parse the Raw Json and put into database
+            Dim myData = JsonConvert.DeserializeObject(strTheRawJSON)
 
-            i = j + 1
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, ">")
-            j = InStr(i, strResponseString, "</TD")
-            strPastEarningsForecast1Ago = Mid(strResponseString, (i + 1), (j - i - 1))
-
-            i = j + 1
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, "<TD>")
-            i = InStr(i + 1, strResponseString, ">")
-            j = InStr(i, strResponseString, "</TD")
-            strPastEarningsForecast2Ago = Mid(strResponseString, (i + 1), (j - i - 1))
-
-        Catch ex As Exception
-        End Try
-
-        If IsNumeric(strCurrentEarningsForecast) Then
             Try
-                If CDec(strCurrentEarningsForecast) > 0 _
-                AndAlso CDec(strPastEarningsForecast1Ago) > 0 _
-                AndAlso CDec(strPastEarningsForecast2Ago) > 0 Then
-                    strEarningsForecastScore = "PASS"
-                End If
+                strCurrentEarningsForecast = myData.GetValue("data").Item("quarterlyForecast").Item("rows")(0).Item("consensusEPSForecast").ToString.ToUpper
             Catch ex As Exception
+                strCurrentEarningsForecast = "N/A"
             End Try
 
-            Dim params(5) As SqlClient.SqlParameter
-            params(0) = New SqlClient.SqlParameter("@strSymbol", SqlDbType.VarChar)
-            params(0).Value = strSymbol
-            params(1) = New SqlClient.SqlParameter("@strCurrentEarningsForecast", SqlDbType.VarChar)
-            params(1).Value = strCurrentEarningsForecast
-            params(2) = New SqlClient.SqlParameter("@strPastEarningsForecast1Ago", SqlDbType.VarChar)
-            If IsNumeric(strPastEarningsForecast1Ago) Then
-                params(2).Value = strPastEarningsForecast1Ago
-            Else
-                params(2).Value = DBNull.Value
-            End If
-            params(3) = New SqlClient.SqlParameter("@strPastEarningsForecast2Ago", SqlDbType.VarChar)
-            If IsNumeric(strPastEarningsForecast2Ago) Then
-                params(3).Value = strPastEarningsForecast2Ago
-            Else
-                params(3).Value = DBNull.Value
-            End If
-            params(4) = New SqlClient.SqlParameter("@strEarningsForecastScore", SqlDbType.VarChar)
-            params(4).Value = strEarningsForecastScore
-            params(5) = New SqlClient.SqlParameter("@dProcessed", SqlDbType.Date)
-            params(5).Value = Today.ToShortDateString
+            Try
+                strPastEarningsForecast1Ago = myData.GetValue("data").Item("quarterlyForecast").Item("rows")(1).Item("consensusEPSForecast").ToString.ToUpper
+            Catch ex As Exception
+                strPastEarningsForecast1Ago = "N/A"
+            End Try
 
-            Dim dsSPResults As DataSet = RunSP("dbo.spUpdateEarningsForecast", params)
-        End If
-        '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            Try
+                strPastEarningsForecast2Ago = myData.GetValue("data").Item("quarterlyForecast").Item("rows")(2).Item("consensusEPSForecast").ToString.ToUpper
+            Catch ex As Exception
+                strPastEarningsForecast2Ago = "N/A"
+            End Try
+
+            If IsNumeric(strCurrentEarningsForecast) Then
+                Try
+                    If CDec(strCurrentEarningsForecast) > 0 _
+                    AndAlso CDec(strPastEarningsForecast1Ago) > 0 _
+                    AndAlso CDec(strPastEarningsForecast2Ago) > 0 Then
+                        strEarningsForecastScore = "PASS"
+                    End If
+                Catch ex As Exception
+                End Try
+
+                Dim params(5) As SqlClient.SqlParameter
+                params(0) = New SqlClient.SqlParameter("@strSymbol", SqlDbType.VarChar)
+                params(0).Value = strSymbol
+                params(1) = New SqlClient.SqlParameter("@strCurrentEarningsForecast", SqlDbType.VarChar)
+                params(1).Value = strCurrentEarningsForecast
+                params(2) = New SqlClient.SqlParameter("@strPastEarningsForecast1Ago", SqlDbType.VarChar)
+                If IsNumeric(strPastEarningsForecast1Ago) Then
+                    params(2).Value = strPastEarningsForecast1Ago
+                Else
+                    params(2).Value = DBNull.Value
+                End If
+                params(3) = New SqlClient.SqlParameter("@strPastEarningsForecast2Ago", SqlDbType.VarChar)
+                If IsNumeric(strPastEarningsForecast2Ago) Then
+                    params(3).Value = strPastEarningsForecast2Ago
+                Else
+                    params(3).Value = DBNull.Value
+                End If
+                params(4) = New SqlClient.SqlParameter("@strEarningsForecastScore", SqlDbType.VarChar)
+                params(4).Value = strEarningsForecastScore
+                params(5) = New SqlClient.SqlParameter("@dProcessed", SqlDbType.Date)
+                params(5).Value = Today.ToShortDateString
+
+                Dim dsSPResults As DataSet = RunSP("dbo.spUpdateEarningsForecast", params)
+            End If
+            '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        Catch ex As Exception
+            Dim x = 1
+        End Try
 
         Return bitSucessful
     End Function
@@ -1934,12 +2037,15 @@ RETRY:
 
         Dim strURLEncodedSymbol As String = strSymbol.Replace("/", ".")
 
-        'Dim URI As String = "https://www.barchart.com/stocks/quotes/" & strURLEncodedSymbol.ToLower
-        Dim URI As String = "http://old.barchart.com/quotes/stocks/" & strURLEncodedSymbol.ToLower
+        Dim URI As String = "https://www.barchart.com/stocks/quotes/" & strURLEncodedSymbol.ToLower
+        'Dim URI As String = "http://old.barchart.com/quotes/stocks/" & strURLEncodedSymbol.ToLower
         'symbol has to be lower case
         'http://www.barchart.com/quotes/stocks/a
 
         Dim webClient As New WebClient()
+        ServicePointManager.Expect100Continue = True
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+
         strResponseString = String.Empty
 
         Dim intServerRetry As Integer = 0
@@ -1983,11 +2089,18 @@ RETRY:
 
             i = 1
 
-            i = InStr(i, strResponseString, "ALPHA</TD>")  'Start of section to grab
-            i = InStr(i + 1, strResponseString, "<STRONG>")
-            i = InStr(i + 1, strResponseString, ">")
-            j = InStr(i, strResponseString, vbTab)
+            i = InStr(i, strResponseString, "WEIGHTEDALPHA&QUOT;")  'Start of section to grab
+            i = InStr(i + 1, strResponseString, "WEIGHTEDALPHA&QUOT;")  'Start of section to grab
+            i = InStr(i + 1, strResponseString, ";")
+            i = InStr(i + 1, strResponseString, ";")
+            j = InStr(i, strResponseString, "&")
             strWeightedAlpha = Mid(strResponseString, (i + 1), (j - i - 1))
+
+            If strWeightedAlpha(0) = "+" Then
+                strWeightedAlpha = Strings.Right(strWeightedAlpha, Len(strWeightedAlpha) - 1)
+                ' ElseIf strWeightedAlpha(0) = "-" Then
+                '     strWeightedAlpha = Strings.Right(strWeightedAlpha, Len(strWeightedAlpha) - 1)
+            End If
 
         Catch ex As Exception
         End Try
@@ -2013,7 +2126,8 @@ RETRY:
             Dim dsSPResults As DataSet = RunSP("dbo.spUpdateWeightedAlpha", params)
         End If
         '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
+        txtActivityLog.AppendText(Now & " The Weighted Alpha for  " & strSymbol & " is " & strWeightedAlpha & vbCrLf)
+        txtActivityLog.AppendText(Now & " The Weighted Alpha SCORE for  " & strSymbol & " is " & strWeightedAlphaScore & vbCrLf)
         Return bitSucessful
     End Function
 
@@ -2022,112 +2136,77 @@ RETRY:
         Dim i As Integer = 1
         Dim j As Integer = 0
 
-        Dim strInsiderTrading As String = String.Empty
+        Dim strSharesBought As String = String.Empty
+        Dim strSharesSold As String = String.Empty
         Dim strInsiderTradingScore As String = "FAIL"
 
         Dim strURLEncodedSymbol As String = strSymbol.Replace("/", "-")
         strURLEncodedSymbol = strURLEncodedSymbol.Replace(".", "-")
+        ServicePointManager.Expect100Continue = True
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
 
-        Dim URI As String = "http://www.nasdaq.com/symbol/" & strURLEncodedSymbol.ToLower & "/insider-trades"
-        'symbol has to be lower case
-        'http://www.nasdaq.com/symbol/aapl/insider-trades
-
-        Dim webClient As New WebClient()
-        strResponseString = String.Empty
-
-        Dim intServerRetry As Integer = 0
-RETRY:
         Try
-            strResponseString = webClient.DownloadString(URI).ToUpper
-        Catch ex As WebException
-            If TypeOf ex.Response Is HttpWebResponse Then
-                Select Case DirectCast(ex.Response, HttpWebResponse).StatusCode
-                    Case HttpStatusCode.NotFound
-                        txtActivityLog.AppendText(Now & HttpStatusCode.NotFound & vbCrLf)
 
-                    Case HttpStatusCode.InternalServerError
-                        If intServerRetry = 0 Then
-                            txtActivityLog.AppendText(Now & ex.Message & " Trying one more time." & vbCrLf)
-                            intServerRetry += 1
-                            Dim SW2 As New Stopwatch
-                            SW2.Restart()
-                            Do
+            'https://api.nasdaq.com/api/company/AAPL/insider-trades?limit=99999&type=ALL
+            Dim httpGetData = CType(WebRequest.Create("https://api.nasdaq.com/api/company/" & strURLEncodedSymbol.ToLower & "/insider-trades?limit=99999&type=ALL"), HttpWebRequest)
+            httpGetData.Host = "api.nasdaq.com"
+            httpGetData.UserAgent = "Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Mobile Safari/537.36"
+            httpGetData.Accept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
+            httpGetData.Headers.Add(HttpRequestHeader.AcceptEncoding, "deflate")
+            httpGetData.Headers.Add(HttpRequestHeader.AcceptLanguage, "en-US,en;q=0.9")
 
-                            Loop Until SW2.ElapsedMilliseconds >= 2000
+            Dim httpDataResponse As HttpWebResponse = CType(httpGetData.GetResponse, HttpWebResponse)
 
-                            GoTo RETRY
-                        End If
+            Dim encode As System.Text.Encoding = System.Text.Encoding.GetEncoding("utf-8")
+            ' Pipes the response stream to a higher level stream reader with the required encoding format. 
+            Dim receiveStream As Stream = httpDataResponse.GetResponseStream()
+            Dim readStream As New StreamReader(receiveStream, encode)
+            Dim strTheRawJSON As String = readStream.ReadToEnd
+            readStream.Close()
+            'Parse the Raw Json and put into database
+            Dim myData = JsonConvert.DeserializeObject(strTheRawJSON)
 
-                    Case Else
-                        txtActivityLog.AppendText(Now & ex.Message & vbCrLf)
-                        'Throw ex
-                End Select
-            End If
-        End Try
-
-        If strResponseString = String.Empty Then
-            txtActivityLog.AppendText(Now & " NO DATA WAS RETURNED FOR " & strSymbol & vbCrLf)
-
-            Return False
-        End If
-        '
-        If strResponseString.Contains(">THERE ARE NO INSIDERS FOR THIS SECURITY<") Then
-            txtActivityLog.AppendText(Now & " THIS FEATURE CURRENTLY IS UNAVAILABLE FOR " & strSymbol & vbCrLf)
-
-            Return False
-        End If
-        If strResponseString.Contains(">THIS IS AN UNKNOWN SYMBOL") Then
-            txtActivityLog.AppendText(Now & " THIS FEATURE CURRENTLY IS UNAVAILABLE FOR " & strSymbol & vbCrLf)
-
-            Return False
-        End If
-        If strResponseString.Contains("THERE IS CURRENTLY NO DATA FOR THIS SYMBOL.") Then
-            txtActivityLog.AppendText(Now & " THERE IS CURRENTLY NO DATA FOR " & strSymbol & vbCrLf)
-
-            Return False
-        End If
-
-        If strResponseString.Contains("THIS SYMBOL CHANGED.") Then
-            txtActivityLog.AppendText(Now & " THIS SYMBOL CHANGED " & strSymbol & vbCrLf)
-
-            Return False
-        End If
-
-        ' walk down the page and put the variables into the array
-        ' ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-        ' InsideTrading current
-        Try
-            i = 1
-
-            i = InStr(i, strResponseString, "<TH>NET ACTIVITY</TH>")  'Start of section to grab
-            i = InStr(i + 1, strResponseString, "<TD")
-            i = InStr(i + 1, strResponseString, ">")
-            j = InStr(i, strResponseString, "</TD")
-            strInsiderTrading = Mid(strResponseString, (i + 1), (j - i - 1))
-        Catch ex As Exception
-        End Try
-
-        If IsNumeric(strInsiderTrading) Then
             Try
-                If CDec(strInsiderTrading) > 0 Then
-                    strInsiderTradingScore = "PASS"
-                End If
+                strSharesBought = myData.GetValue("data").Item("numberOfSharesTraded").Item("rows")(0).Item("months3").ToString.ToUpper
             Catch ex As Exception
+                strSharesBought = "N/A"
+            End Try
+            Try
+                strSharesSold = myData.GetValue("data").Item("numberOfSharesTraded").Item("rows")(1).Item("months3").ToString.ToUpper
+            Catch ex As Exception
+                strSharesSold = "N/A"
             End Try
 
-            Dim params(3) As SqlClient.SqlParameter
-            params(0) = New SqlClient.SqlParameter("@strSymbol", SqlDbType.VarChar)
-            params(0).Value = strSymbol
-            params(1) = New SqlClient.SqlParameter("@strInsiderTrading", SqlDbType.VarChar)
-            params(1).Value = strInsiderTrading
-            params(2) = New SqlClient.SqlParameter("@strInsiderTradingScore", SqlDbType.VarChar)
-            params(2).Value = strInsiderTradingScore
-            params(3) = New SqlClient.SqlParameter("@dProcessed", SqlDbType.Date)
-            params(3).Value = Today.ToShortDateString
+            If IsNumeric(strSharesBought) AndAlso IsNumeric(strSharesSold) Then
+                Dim intNetResult As Integer = CInt(strSharesBought) - CInt(strSharesSold)
+                Try
+                    If intNetResult > 0 Then
+                        strInsiderTradingScore = "PASS"
+                    End If
+                Catch ex As Exception
+                End Try
 
-            Dim dsSPResults As DataSet = RunSP("dbo.spUpdateInsiderTrading", params)
-        End If
-        '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+                Dim params(3) As SqlClient.SqlParameter
+                params(0) = New SqlClient.SqlParameter("@strSymbol", SqlDbType.VarChar)
+                params(0).Value = strSymbol
+                params(1) = New SqlClient.SqlParameter("@strInsiderTrading", SqlDbType.VarChar)
+                Try
+                    params(1).Value = CStr(intNetResult)
+
+                Catch ex As Exception
+                    params(1).Value = "N/A"
+                End Try
+                params(2) = New SqlClient.SqlParameter("@strInsiderTradingScore", SqlDbType.VarChar)
+                params(2).Value = strInsiderTradingScore
+                params(3) = New SqlClient.SqlParameter("@dProcessed", SqlDbType.Date)
+                params(3).Value = Today.ToShortDateString
+
+                Dim dsSPResults As DataSet = RunSP("dbo.spUpdateInsiderTrading", params)
+            End If
+            '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        Catch ex As Exception
+            Console.Write(ex.Message)
+        End Try
 
         Return bitSucessful
     End Function
@@ -2251,6 +2330,129 @@ RETRY:
         Catch ex As Exception
 
         End Try
+
+        Return bitSucessful
+    End Function
+
+    Public Function GetBCATargetPrice(strSymbol As String)
+        Dim bitSucessful As Boolean = True
+        Dim intInitialStartingPlace As Integer = 0
+        Dim intCurrentPlace As Integer = 0
+        Dim intStartingPlace As Integer = 1
+        Dim intEndingPlace As Integer = 0
+
+        Dim strTargetLowPrice As String = "N/A"
+        Dim strTargetMeanPrice As String = "N/A"
+        Dim strTargetHighPrice As String = "N/A"
+
+        Dim strURLEncodedSymbol As String = strSymbol.Replace("/", "-")
+        strURLEncodedSymbol = strURLEncodedSymbol.Replace(".", "-")
+
+        Dim URI As String = "https://finance.yahoo.com/quote/" & strURLEncodedSymbol & "/analysts?p=" & strURLEncodedSymbol
+
+        Dim webClient As New WebClient()
+
+        ServicePointManager.Expect100Continue = True
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+
+        strResponseString = String.Empty
+
+        Dim intServerRetry As Integer = 0
+RETRY:
+        Try
+            strResponseString = webClient.DownloadString(URI).ToUpper
+        Catch ex As WebException
+            If TypeOf ex.Response Is HttpWebResponse Then
+                Select Case DirectCast(ex.Response, HttpWebResponse).StatusCode
+                    Case HttpStatusCode.NotFound
+                        txtActivityLog.AppendText(Now & HttpStatusCode.NotFound & vbCrLf)
+
+                    Case HttpStatusCode.InternalServerError
+                        If intServerRetry = 0 Then
+                            txtActivityLog.AppendText(Now & ex.Message & " Trying one more time." & vbCrLf)
+                            intServerRetry += 1
+                            Dim SW2 As New Stopwatch
+                            SW2.Restart()
+                            Do
+
+                            Loop Until SW2.ElapsedMilliseconds >= 2000
+
+                            GoTo RETRY
+                        End If
+
+                    Case Else
+                        txtActivityLog.AppendText(Now & ex.Message & vbCrLf)
+                        'Throw ex
+                End Select
+            End If
+        End Try
+
+        'first find the start of the data
+
+        intCurrentPlace = InStr(1, strResponseString, "ROOT.APP.MAIN =")
+
+        If intCurrentPlace <> 0 Then
+            intInitialStartingPlace = intCurrentPlace
+            intStartingPlace = intCurrentPlace
+            intEndingPlace = intCurrentPlace
+
+            '"TARGETLOWPRICE":{"RAW":129.58,"FMT":"129.58"}
+            intCurrentPlace = InStr(intStartingPlace, strResponseString, "TARGETLOWPRICE")
+            If intCurrentPlace <> 0 Then
+                intStartingPlace = intCurrentPlace + 23
+                intEndingPlace = InStr(intStartingPlace, strResponseString, ",")
+
+                Dim strTempPrice = Mid(strResponseString, intStartingPlace, (intEndingPlace - intStartingPlace))
+                If IsNumeric(strTempPrice) = True Then
+                    strTargetLowPrice = FormatNumber(strTempPrice)
+                End If
+            End If
+
+            '"TARGETMEANPRICE":{"RAW":187.74,"FMT":"187.74"}
+            intCurrentPlace = intInitialStartingPlace
+            intStartingPlace = intCurrentPlace
+            intEndingPlace = intCurrentPlace
+
+            intCurrentPlace = InStr(intStartingPlace, strResponseString, "TARGETMEANPRICE")
+            If intCurrentPlace <> 0 Then
+                intStartingPlace = intCurrentPlace + 24
+                intEndingPlace = InStr(intStartingPlace, strResponseString, ",")
+
+                Dim strTempPrice = Mid(strResponseString, intStartingPlace, (intEndingPlace - intStartingPlace))
+                If IsNumeric(strTempPrice) = True Then
+                    strTargetMeanPrice = FormatNumber(strTempPrice)
+                End If
+            End If
+
+            '"TARGETHIGHPRICE":{"RAW":235,"FMT":"235.00"}
+            intCurrentPlace = intInitialStartingPlace
+            intStartingPlace = intCurrentPlace
+            intEndingPlace = intCurrentPlace
+
+            intCurrentPlace = InStr(intStartingPlace, strResponseString, "TARGETHIGHPRICE")
+            If intCurrentPlace <> 0 Then
+                intStartingPlace = intCurrentPlace + 24
+                intEndingPlace = InStr(intStartingPlace, strResponseString, ",")
+
+                Dim strTempPrice = Mid(strResponseString, intStartingPlace, (intEndingPlace - intStartingPlace))
+                If IsNumeric(strTempPrice) = True Then
+                    strTargetHighPrice = FormatNumber(strTempPrice)
+                End If
+            End If
+        End If
+
+        Dim paramsCompanyTargets(4) As SqlClient.SqlParameter
+        paramsCompanyTargets(0) = New SqlClient.SqlParameter("@strSymbol", SqlDbType.VarChar)
+        paramsCompanyTargets(0).Value = strSymbol
+        paramsCompanyTargets(1) = New SqlClient.SqlParameter("@strTargetLowPrice", SqlDbType.VarChar)
+        paramsCompanyTargets(1).Value = strTargetLowPrice
+        paramsCompanyTargets(2) = New SqlClient.SqlParameter("@strTargetMeanPrice", SqlDbType.VarChar)
+        paramsCompanyTargets(2).Value = strTargetMeanPrice
+        paramsCompanyTargets(3) = New SqlClient.SqlParameter("@strTargetHighPrice", SqlDbType.VarChar)
+        paramsCompanyTargets(3).Value = strTargetHighPrice
+        paramsCompanyTargets(4) = New SqlClient.SqlParameter("@dProcessed", SqlDbType.Date)
+        paramsCompanyTargets(4).Value = Today
+        Dim dsSPResultsCompanyTargets As DataSet = RunSP("dbo.spBCAUpdateTargetPrices", paramsCompanyTargets)
 
         Return bitSucessful
     End Function
@@ -2454,6 +2656,10 @@ FAILED_TO_LOAD:
         Dim URI As String = "http://www.zacks.com/stock/quote/" & strURLEncodedSymbol.ToUpper
 
         Dim webClient As New WebClient()
+
+        ServicePointManager.Expect100Continue = True
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+
         strResponseString = String.Empty
 
         Dim intServerRetry As Integer = 0
@@ -2554,6 +2760,10 @@ RETRY:
         Dim URI As String = "http://www.zacks.com/stock/quote/" & strURLEncodedSymbol.ToUpper & "/financial-overview"
 
         Dim webClient As New WebClient()
+
+        ServicePointManager.Expect100Continue = True
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+
         strResponseString = String.Empty
 
         Dim intServerRetry As Integer = 0
@@ -2616,10 +2826,69 @@ RETRY:
 
             Dim dsSPResultsPERatio As DataSet = RunSP("dbo.spUpdatePERatio", paramsPERatio)
         End If
+
+        'This is quarterly ROE
+        i = 1
+        Dim strCurrentROE As String = String.Empty
+        '">ROE</
+        i = InStr(i + 1, strResponseString, ">ROE</")
+        i = InStr(i + 1, strResponseString, "</TD")
+        i = InStr(i + 1, strResponseString, "<TD")
+        i = InStr(i + 1, strResponseString, ">")
+        j = InStr(i, strResponseString, "</TD")
+        strCurrentROE = Mid(strResponseString, (i + 1), (j - i - 1))
+
+        Dim strPastROE1yrAgo As String = String.Empty
+        '">ROE</
+        i = InStr(i + 1, strResponseString, "<TR>")
+        i = InStr(i + 1, strResponseString, "</TD")
+        i = InStr(i + 1, strResponseString, "<TD")
+        i = InStr(i + 1, strResponseString, ">")
+        j = InStr(i, strResponseString, "</TD")
+        strPastROE1yrAgo = Mid(strResponseString, (i + 1), (j - i - 1))
+
+        Dim strPastROE2yrsAgo As String = String.Empty
+        '">ROE</
+        i = InStr(i + 1, strResponseString, "<TR>")
+        i = InStr(i + 1, strResponseString, "</TD")
+        i = InStr(i + 1, strResponseString, "<TD")
+        i = InStr(i + 1, strResponseString, ">")
+        j = InStr(i, strResponseString, "</TD")
+        strPastROE2yrsAgo = Mid(strResponseString, (i + 1), (j - i - 1))
+
+        Try
+            If IsNumeric(strCurrentROE) Then
+                Dim strROEScore As String = "FAIL"
+                If strCurrentROE > strPastROE1yrAgo AndAlso strPastROE1yrAgo > strPastROE2yrsAgo Then
+                    strROEScore = "PASS"
+                End If
+
+                Dim params(5) As SqlClient.SqlParameter
+                params(0) = New SqlClient.SqlParameter("@strSymbol", SqlDbType.VarChar)
+                params(0).Value = strSymbol
+                params(1) = New SqlClient.SqlParameter("@strCurrentROE", SqlDbType.VarChar)
+                params(1).Value = strCurrentROE
+                params(2) = New SqlClient.SqlParameter("@strPastROE1yrAgo", SqlDbType.VarChar)
+                params(2).Value = strPastROE1yrAgo
+                params(3) = New SqlClient.SqlParameter("@strPastROE2yrsAgo", SqlDbType.VarChar)
+                params(3).Value = strPastROE2yrsAgo
+                params(4) = New SqlClient.SqlParameter("@strROEScore", SqlDbType.VarChar)
+                params(4).Value = strROEScore
+                params(5) = New SqlClient.SqlParameter("@dProcessed", SqlDbType.Date)
+                params(5).Value = Today.ToShortDateString
+
+                Dim dsSPResults As DataSet = RunSP("dbo.spUpdateROE", params)
+            End If
+
+        Catch ex As Exception
+
+        End Try
+
         Return bitSucessful
     End Function
 
     Public Function GetIVFromCBOE(strSymbol As String) As Boolean
+        Dim SW2 As New Stopwatch
         Dim bitSucessful As Boolean = True
         Dim i As Integer = 0
         Dim j As Integer = 0
@@ -2634,13 +2903,20 @@ RETRY:
             GetResponseStringFromURL("http://www.cboe.com/tradtool/ivolservice8.aspx", "</HTML>")
 
             bitLoggedIntoCBOE = True
+            SW2.Restart()
+            Do
+                Application.DoEvents()
+            Loop Until SW2.ElapsedMilliseconds >= 20000
+
+            Application.DoEvents()
+
         End If
 
 RETRY:
         strResponseString = ""
         'Load the page and get the response
         Dim URI As String = "http://cboe.ivolatility.com/options.j?ticker=" & strURLEncodedSymbol.ToLower & "&R=0&x=0&y=0"
-        strResponseString = GetResponseStringFromURL(URI, "IVOLATILITY.COM  ALL RIGHTS RESERVED.  IVOLATILITY <")
+        strResponseString = GetResponseStringFromURL(URI, ">PRIVACY STATEMENT</A>")
 
         If strResponseString = "" Then
             txtActivityLog.AppendText(Now & " RECEIVED AND EMPTY PAGE. RETRYING. " & strSymbol & vbCrLf)
@@ -2660,45 +2936,53 @@ RETRY:
             Return False 'there is no page for the symbol
         End If
         i = InStr(i + 1, strResponseString, "<TD")
-        i = InStr(i + 1, strResponseString, "WR(D[")
-        j = InStr(i, strResponseString, "]")
-        Dim strIVXMeanDataPointName As String = Mid(strResponseString, (i + 3), (j - i - 2))
+        'i = InStr(i + 1, strResponseString, "WR(D[")
+        i = InStr(i + 4, strResponseString, ">")
+        'j = InStr(i, strResponseString, "]")
+        j = InStr(i, strResponseString, "</")
+        'Dim strIVXMeanDataPointName As String = Mid(strResponseString, (i + 1), (j - i - 2))
+        Dim strIVXMeanDataPoint As String = Mid(strResponseString, (i + 1), (j - i - 2))
 
         i = j + 1
         '>52 week High
         i = InStr(i + 1, strResponseString, "<TD")
         i = InStr(i + 1, strResponseString, "<TD")
         i = InStr(i + 1, strResponseString, "<TD")
-        i = InStr(i + 1, strResponseString, "WR(D[")
-        j = InStr(i, strResponseString, "]")
-        Dim strIVXHighDataPointName As String = Mid(strResponseString, (i + 3), (j - i - 2))
+        'i = InStr(i + 1, strResponseString, "WR(D[")
+        i = InStr(i + 4, strResponseString, ">")
+        'j = InStr(i, strResponseString, "]")
+        j = InStr(i, strResponseString, "%")
+        'Dim strIVXHighDataPointName As String = Mid(strResponseString, (i + 1), (j - i - 1))
+        Dim strIVXHighDataPoint As String = Mid(strResponseString, (i + 1), (j - i - 1))
 
         i = j + 1
         '>52 week Low
         i = InStr(i + 1, strResponseString, "<TD")
-        i = InStr(i + 1, strResponseString, "WR(D[")
-        j = InStr(i, strResponseString, "]")
-        Dim strIVXLowDataPointName As String = Mid(strResponseString, (i + 3), (j - i - 2))
+        i = InStr(i + 4, strResponseString, ">")
+        'j = InStr(i, strResponseString, "]")
+        j = InStr(i, strResponseString, "%")
+        'Dim strIVXLowDataPointName As String = Mid(strResponseString, (i + 1), (j - i - 1))
+        Dim strIVXLowDataPoint As String = Mid(strResponseString, (i + 1), (j - i - 1))
 
         '2. look for the names in the array
 
-        i = 1
-        i = InStr(i + 1, strResponseString, strIVXMeanDataPointName & "=")
-        i = InStr(i + 1, strResponseString, "'")
-        j = InStr(i + 1, strResponseString, "'")
-        Dim strIVXMeanDataPoint As String = Mid(strResponseString, (i + 1), (j - i - 1))
+        'i = 1
+        'i = InStr(i + 1, strResponseString, strIVXMeanDataPointName & "=")
+        'i = InStr(i + 1, strResponseString, "'")
+        'j = InStr(i + 1, strResponseString, "'")
+        'Dim strIVXMeanDataPoint As String = Mid(strResponseString, (i + 1), (j - i - 1))
 
-        i = 1
-        i = InStr(i + 1, strResponseString, strIVXHighDataPointName & "=")
-        i = InStr(i + 1, strResponseString, "'")
-        j = InStr(i + 1, strResponseString, "'")
-        Dim strIVXHighDataPoint As String = Mid(strResponseString, (i + 1), (j - i - 1))
+        'i = 1
+        'i = InStr(i + 1, strResponseString, strIVXHighDataPointName & "=")
+        'i = InStr(i + 1, strResponseString, "'")
+        'j = InStr(i + 1, strResponseString, "'")
+        'Dim strIVXHighDataPoint As String = Mid(strResponseString, (i + 1), (j - i - 1))
 
-        i = 1
-        i = InStr(i + 1, strResponseString, strIVXLowDataPointName & "=")
-        i = InStr(i + 1, strResponseString, "'")
-        j = InStr(i + 1, strResponseString, "'")
-        Dim strIVXLowDataPoint As String = Mid(strResponseString, (i + 1), (j - i - 1))
+        'i = 1
+        'i = InStr(i + 1, strResponseString, strIVXLowDataPointName & "=")
+        'i = InStr(i + 1, strResponseString, "'")
+        'j = InStr(i + 1, strResponseString, "'")
+        'Dim strIVXLowDataPoint As String = Mid(strResponseString, (i + 1), (j - i - 1))
 
         'Calculate the IV Percentile
 
@@ -2708,9 +2992,12 @@ RETRY:
         Dim strIVXResultDataPoint As String = 0
 
         Try
-            Dim decIVXMeanDataPoint As Decimal = CDec(Replace(strIVXMeanDataPoint, "%", ""))
-            Dim decIVXHighDataPoint As Decimal = CDec(Replace(strIVXHighDataPoint, "%", ""))
-            Dim decIVXLowDataPoint As Decimal = CDec(Replace(strIVXLowDataPoint, "%", ""))
+            'Dim decIVXMeanDataPoint As Decimal = CDec(Replace(strIVXMeanDataPoint, "%", ""))
+            'Dim decIVXHighDataPoint As Decimal = CDec(Replace(strIVXHighDataPoint, "%", ""))
+            'Dim decIVXLowDataPoint As Decimal = CDec(Replace(strIVXLowDataPoint, "%", ""))
+            Dim decIVXMeanDataPoint As Decimal = CDec(strIVXMeanDataPoint)
+            Dim decIVXHighDataPoint As Decimal = CDec(strIVXHighDataPoint)
+            Dim decIVXLowDataPoint As Decimal = CDec(strIVXLowDataPoint)
 
             Dim decCurrentIVXDataPoint = decIVXMeanDataPoint - decIVXLowDataPoint
             Dim decTempIVXHighDataPoint = decIVXHighDataPoint - decIVXLowDataPoint
@@ -2739,7 +3026,7 @@ RETRY:
         Return bitSucessful
     End Function
 
-    Public Function GetFullCompanyReportFromZacks(strSymbol As String) As Boolean
+    Public Function GetZacksAnalystRecommendationsAndIndustryComparison(strSymbol As String) As Boolean
         Dim bitSucessful As Boolean = True
         Dim i As Integer = 0
         Dim j As Integer = 0
@@ -2748,9 +3035,271 @@ RETRY:
 
         Dim strURLEncodedSymbol As String = strSymbol.Replace("/", ".")
 
-        Dim URI As String = "http://www.zacks.com/stock/quote/" & strURLEncodedSymbol.ToUpper & "/financial-overview"
+        Dim URI As String = "http://www.zacks.com/stock/research/" & strURLEncodedSymbol.ToUpper & "/industry-comparison"
 
         Dim webClient As New WebClient()
+
+        ServicePointManager.Expect100Continue = True
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+
+        strResponseString = String.Empty
+        ServicePointManager.Expect100Continue = True
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+
+
+        Dim intServerRetry As Integer = 0
+RETRY:
+        Try
+            strResponseString = webClient.DownloadString(URI).ToUpper
+        Catch ex As WebException
+            If TypeOf ex.Response Is HttpWebResponse Then
+                Select Case DirectCast(ex.Response, HttpWebResponse).StatusCode
+                    Case HttpStatusCode.NotFound
+                        txtActivityLog.AppendText(Now & HttpStatusCode.NotFound & vbCrLf)
+
+                    Case HttpStatusCode.InternalServerError
+                        If intServerRetry = 0 Then
+                            txtActivityLog.AppendText(Now & ex.Message & " Trying one more time." & vbCrLf)
+                            intServerRetry += 1
+                            Dim SW2 As New Stopwatch
+                            SW2.Restart()
+                            Do
+
+                            Loop Until SW2.ElapsedMilliseconds >= 2000
+
+                            GoTo RETRY
+                        End If
+
+                    Case Else
+                        txtActivityLog.AppendText(Now & ex.Message & vbCrLf)
+                        'Throw ex
+                End Select
+            End If
+        End Try
+
+        If strResponseString = "" Then
+            txtActivityLog.AppendText(Now & " RECEIVED AND EMPTY PAGE. RETRYING. " & strSymbol & vbCrLf)
+            intRetryNumber += 1
+            If intRetryNumber > 5 Then
+                Return False
+            End If
+            GoTo RETRY
+        End If
+
+        i = 1
+        Dim strAnalystRecommendation As String = String.Empty
+        Dim strIndustryAnalystRecommendation As String = String.Empty
+        Dim strAnalystRecommendationScore As String = String.Empty
+        Dim strIndustryAnalystRecommendationScore As String = String.Empty
+
+        '>AVERAGE RECOMMENDATION (1=BUY, 5=SELL)</
+        i = InStr(i + 1, strResponseString, ">AVERAGE RECOMMENDATION (1=BUY, 5=SELL)</")
+        i = InStr(i + 1, strResponseString, "<TD")
+        i = InStr(i + 1, strResponseString, ">")
+        j = InStr(i, strResponseString, "</TD")
+        strAnalystRecommendation = Mid(strResponseString, (i + 1), (j - i - 1))
+
+        'industry analyst recs
+        i = InStr(j + 1, strResponseString, "<TD")
+        i = InStr(i + 1, strResponseString, ">")
+        j = InStr(i, strResponseString, "</TD")
+        strIndustryAnalystRecommendation = Mid(strResponseString, (i + 1), (j - i - 1))
+
+        Try
+            If strAnalystRecommendation < 2.25 Then
+                strAnalystRecommendationScore = "PASS"
+            Else
+                strAnalystRecommendationScore = "FAIL"
+            End If
+        Catch ex As Exception
+            strAnalystRecommendationScore = "FAIL"
+        End Try
+
+        If IsNumeric(strAnalystRecommendation) Then
+            Dim params(3) As SqlClient.SqlParameter
+            params(0) = New SqlClient.SqlParameter("@strSymbol", SqlDbType.VarChar)
+            params(0).Value = strSymbol
+            params(1) = New SqlClient.SqlParameter("@strAnalystRecommendation", SqlDbType.VarChar)
+            params(1).Value = strAnalystRecommendation
+            params(2) = New SqlClient.SqlParameter("@strAnalystRecommendationScore", SqlDbType.VarChar)
+            params(2).Value = strAnalystRecommendationScore
+            params(3) = New SqlClient.SqlParameter("@dProcessed", SqlDbType.Date)
+            params(3).Value = Today.ToShortDateString
+
+            Dim dsSPResultsPERatio As DataSet = RunSP("dbo.spUpdateAnalystRecommendation", params)
+        End If
+
+        '#############################################################################
+        ' HERE WE ARE GOING TO MAKE A FEW COMPARISONS TO GET THE INDUSTY SCORE.
+
+        Dim strLast5Years As String = String.Empty
+        Dim strNext5Years As String = String.Empty
+        Dim strNetProfitMargin As String = String.Empty
+        Dim strReturnOnEquity As String = String.Empty
+
+        Dim strIndustryLast5Years As String = String.Empty
+        Dim strIndustryNext5Years As String = String.Empty
+        Dim strIndustryNetProfitMargin As String = String.Empty
+        Dim strIndustryReturnOnEquity As String = String.Empty
+
+        '>LAST 5 YEARS</
+        i = 1
+        i = InStr(i + 1, strResponseString, ">LAST 5 YEARS</")
+        i = InStr(i + 1, strResponseString, "<TD")
+        i = InStr(i + 1, strResponseString, ">")
+        j = InStr(i, strResponseString, "</TD")
+        strLast5Years = Mid(strResponseString, (i + 1), (j - i - 1))
+
+        i = InStr(j + 1, strResponseString, "<TD")
+        i = InStr(i + 1, strResponseString, ">")
+        j = InStr(i, strResponseString, "</TD")
+        strIndustryLast5Years = Mid(strResponseString, (i + 1), (j - i - 1))
+
+        '>NEXT 5 YEARS</
+        i = 1
+        i = InStr(i + 1, strResponseString, ">NEXT 5 YEARS</")
+        i = InStr(i + 1, strResponseString, "<TD")
+        i = InStr(i + 1, strResponseString, ">")
+        j = InStr(i, strResponseString, "</TD")
+        strNext5Years = Mid(strResponseString, (i + 1), (j - i - 1))
+
+        i = InStr(j + 1, strResponseString, "<TD")
+        i = InStr(i + 1, strResponseString, ">")
+        j = InStr(i, strResponseString, "</TD")
+        strIndustryNext5Years = Mid(strResponseString, (i + 1), (j - i - 1))
+
+        '>NET PROFIT MARGIN (TTM)</
+        i = 1
+        i = InStr(i + 1, strResponseString, ">NET PROFIT MARGIN (TTM)</")
+        i = InStr(i + 1, strResponseString, "<TD")
+        i = InStr(i + 1, strResponseString, ">")
+        j = InStr(i, strResponseString, "</TD")
+        strNetProfitMargin = Mid(strResponseString, (i + 1), (j - i - 1))
+
+        i = InStr(j + 1, strResponseString, "<TD")
+        i = InStr(i + 1, strResponseString, ">")
+        j = InStr(i, strResponseString, "</TD")
+        strIndustryNetProfitMargin = Mid(strResponseString, (i + 1), (j - i - 1))
+
+
+        '>RETURN ON EQUITY (TTM)</
+        i = 1
+        i = InStr(i + 1, strResponseString, ">RETURN ON EQUITY (TTM)</")
+        i = InStr(i + 1, strResponseString, "<TD")
+        i = InStr(i + 1, strResponseString, ">")
+        i = InStr(i + 1, strResponseString, ">")
+        j = InStr(i, strResponseString, "</")
+        strReturnOnEquity = Mid(strResponseString, (i + 1), (j - i - 1))
+
+        i = InStr(j + 1, strResponseString, "<TD")
+        i = InStr(i + 1, strResponseString, ">")
+        i = InStr(i + 1, strResponseString, ">")
+        j = InStr(i, strResponseString, "</")
+        strIndustryReturnOnEquity = Mid(strResponseString, (i + 1), (j - i - 1))
+
+
+        'So now we are going to compare all this stuff agains its Industry numbers
+        'For now, we are going to say 4 to pass.  I might make it 3.  we will see
+        Dim intNumberOfPassingGrades As Integer = 0 'Start out failing.
+        Dim intNumberOfTotalGrades As Integer = 0 'Start out failing.
+
+        If IsNumeric(strAnalystRecommendation) = True AndAlso IsNumeric(strIndustryAnalystRecommendation) = True Then
+            intNumberOfTotalGrades += 1
+            Try
+                If strAnalystRecommendation < strIndustryAnalystRecommendation Then
+                    intNumberOfPassingGrades += 1
+                End If
+            Catch ex As Exception
+            End Try
+        End If
+
+        If IsNumeric(strLast5Years) = True AndAlso IsNumeric(strIndustryLast5Years) = True Then
+            intNumberOfTotalGrades += 1
+            Try
+                If strLast5Years > strIndustryLast5Years Then
+                    intNumberOfPassingGrades += 1
+                End If
+            Catch ex As Exception
+            End Try
+        End If
+
+        If IsNumeric(strNext5Years) = True AndAlso IsNumeric(strIndustryNext5Years) = True Then
+            intNumberOfTotalGrades += 1
+            Try
+                If strNext5Years > strIndustryNext5Years Then
+                    intNumberOfPassingGrades += 1
+                End If
+            Catch ex As Exception
+            End Try
+        End If
+
+        strNetProfitMargin = strNetProfitMargin.Remove(Len(strNetProfitMargin) - 1)
+        strIndustryNetProfitMargin = strIndustryNetProfitMargin.Remove(Len(strIndustryNetProfitMargin) - 1)
+        If IsNumeric(strNetProfitMargin) = True AndAlso IsNumeric(strIndustryNetProfitMargin) = True Then
+            intNumberOfTotalGrades += 1
+            Try
+                If strNetProfitMargin > strIndustryNetProfitMargin Then
+                    intNumberOfPassingGrades += 1
+                End If
+            Catch ex As Exception
+            End Try
+        End If
+
+        strReturnOnEquity = strReturnOnEquity.Remove(Len(strReturnOnEquity) - 1)
+        strIndustryReturnOnEquity = strIndustryReturnOnEquity.Remove(Len(strIndustryReturnOnEquity) - 1)
+        If IsNumeric(strReturnOnEquity) = True AndAlso IsNumeric(strIndustryReturnOnEquity) = True Then
+            intNumberOfTotalGrades += 1
+            Try
+                If strReturnOnEquity > strIndustryReturnOnEquity Then
+                    intNumberOfPassingGrades += 1
+                End If
+            Catch ex As Exception
+            End Try
+        End If
+
+        Dim strIndustryEarningsScore As String = "FAIL"
+        Try
+            If intNumberOfPassingGrades / intNumberOfTotalGrades >= 0.5 Then
+                strIndustryEarningsScore = "PASS"
+            End If
+        Catch ex As Exception
+            'it is already fail
+        End Try
+        'If intNumberOfPassingGrades >= 4 Then
+        '    strIndustryEarningsScore = "PASS"
+        'End If
+
+        Dim paramsIndustry(3) As SqlClient.SqlParameter
+        paramsIndustry(0) = New SqlClient.SqlParameter("@strSymbol", SqlDbType.VarChar)
+        paramsIndustry(0).Value = strSymbol
+        paramsIndustry(1) = New SqlClient.SqlParameter("@strIndustryEarningsScore", SqlDbType.VarChar)
+        paramsIndustry(1).Value = strIndustryEarningsScore
+        paramsIndustry(2) = New SqlClient.SqlParameter("@intNumberOfPassingGrades", SqlDbType.VarChar)
+        paramsIndustry(2).Value = intNumberOfPassingGrades
+        paramsIndustry(3) = New SqlClient.SqlParameter("@dProcessed", SqlDbType.Date)
+        paramsIndustry(3).Value = Today.ToShortDateString
+
+        Dim dsSPResultsparamsIndustry As DataSet = RunSP("dbo.spUpdateIndustryEarnings", paramsIndustry)
+
+        Return bitSucessful
+    End Function
+
+    Public Function GetEarningsGrowthFromZacks(strSymbol As String) As Boolean
+        Dim bitSucessful As Boolean = True
+        Dim i As Integer = 0
+        Dim j As Integer = 0
+
+        Dim intRetryNumber As Integer = 0
+
+        Dim strURLEncodedSymbol As String = strSymbol.Replace("/", ".")
+
+        Dim URI As String = "https://www.zacks.com/stock/quote/" & strURLEncodedSymbol.ToUpper & "?q=" & strURLEncodedSymbol.ToUpper
+        'https://www.zacks.com/stock/quote/AAPL?q=AAPL 
+        Dim webClient As New WebClient()
+
+        ServicePointManager.Expect100Continue = True
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+
         strResponseString = String.Empty
 
         Dim intServerRetry As Integer = 0
@@ -2793,6 +3342,101 @@ RETRY:
         End If
 
 
+        'Earnings Growth
+        i = 1
+        Dim strEarningsGrowth As String = String.Empty
+        Dim strEarningsGrowthScore As String = String.Empty
+        '>VS. PREVIOUS YEAR</
+        i = InStr(i + 1, strResponseString, ">EXP EPS GROWTH")
+        i = InStr(i + 1, strResponseString, "<P ")
+        i = InStr(i + 1, strResponseString, ">")
+        j = InStr(i, strResponseString, "</")
+        strEarningsGrowth = Mid(strResponseString, (i + 1), (j - i - 1))
+        'This is a percentage string ie. 13.56%
+        strEarningsGrowth = strEarningsGrowth.Remove(strEarningsGrowth.Length - 1)
+        Try
+            If strEarningsGrowth >= 8 Then
+                strEarningsGrowthScore = "PASS"
+            Else
+                strEarningsGrowthScore = "FAIL"
+            End If
+        Catch ex As Exception
+            strEarningsGrowthScore = "FAIL"
+        End Try
+
+        If IsNumeric(strEarningsGrowth) Then
+            Dim paramsEarnings(3) As SqlClient.SqlParameter
+            paramsEarnings(0) = New SqlClient.SqlParameter("@strSymbol", SqlDbType.VarChar)
+            paramsEarnings(0).Value = strSymbol
+            paramsEarnings(1) = New SqlClient.SqlParameter("@strEarningsGrowth", SqlDbType.VarChar)
+            paramsEarnings(1).Value = strEarningsGrowth
+            paramsEarnings(2) = New SqlClient.SqlParameter("@strEarningsGrowthScore", SqlDbType.VarChar)
+            paramsEarnings(2).Value = strEarningsGrowthScore
+            paramsEarnings(3) = New SqlClient.SqlParameter("@dProcessed", SqlDbType.Date)
+            paramsEarnings(3).Value = Today.ToShortDateString
+
+            Dim dsSPResultsparamsEarnings As DataSet = RunSP("dbo.spUpdateEarningsGrowth", paramsEarnings)
+        End If
+        Return bitSucessful
+    End Function
+
+    Public Function GetFullCompanyReportFromZacks(strSymbol As String) As Boolean
+        Dim bitSucessful As Boolean = True
+        Dim i As Integer = 0
+        Dim j As Integer = 0
+
+        Dim intRetryNumber As Integer = 0
+
+        Dim strURLEncodedSymbol As String = strSymbol.Replace("/", ".")
+
+        Dim URI As String = "http://www.zacks.com/stock/quote/" & strURLEncodedSymbol.ToUpper & "/financial-overview"
+
+        Dim webClient As New WebClient()
+
+        ServicePointManager.Expect100Continue = True
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+
+        strResponseString = String.Empty
+
+        Dim intServerRetry As Integer = 0
+RETRY:
+        Try
+            strResponseString = webClient.DownloadString(URI).ToUpper
+        Catch ex As WebException
+            If TypeOf ex.Response Is HttpWebResponse Then
+                Select Case DirectCast(ex.Response, HttpWebResponse).StatusCode
+                    Case HttpStatusCode.NotFound
+                        txtActivityLog.AppendText(Now & HttpStatusCode.NotFound & vbCrLf)
+
+                    Case HttpStatusCode.InternalServerError
+                        If intServerRetry = 0 Then
+                            txtActivityLog.AppendText(Now & ex.Message & " Trying one more time." & vbCrLf)
+                            intServerRetry += 1
+                            Dim SW2 As New Stopwatch
+                            SW2.Restart()
+                            Do
+
+                            Loop Until SW2.ElapsedMilliseconds >= 2000
+
+                            GoTo RETRY
+                        End If
+
+                    Case Else
+                        txtActivityLog.AppendText(Now & ex.Message & vbCrLf)
+                        'Throw ex
+                End Select
+            End If
+        End Try
+
+        If strResponseString = "" Then
+            txtActivityLog.AppendText(Now & " RECEIVED AND EMPTY PAGE. RETRYING. " & strSymbol & vbCrLf)
+            intRetryNumber += 1
+            If intRetryNumber > 5 Then
+                Return False
+            End If
+            GoTo RETRY
+        End If
+
         i = 1
         Dim strTrailingPE As String = String.Empty
         '">TRAILING P/E</
@@ -2813,6 +3457,29 @@ RETRY:
 
             Dim dsSPResultsPERatio As DataSet = RunSP("dbo.spUpdatePERatio", paramsPERatio)
         End If
+
+        'forward PE
+        i = 1
+        Dim strForwardPE As String = String.Empty
+        '">P/E (F1)</
+        i = InStr(i + 1, strResponseString, ">P/E (F1)</")
+        i = InStr(i + 1, strResponseString, "<TD")
+        i = InStr(i + 1, strResponseString, ">")
+        j = InStr(i, strResponseString, "</TD")
+        strForwardPE = Mid(strResponseString, (i + 1), (j - i - 1))
+
+        If IsNumeric(strForwardPE) Then
+            Dim params(2) As SqlClient.SqlParameter
+            params(0) = New SqlClient.SqlParameter("@strSymbol", SqlDbType.VarChar)
+            params(0).Value = strSymbol
+            params(1) = New SqlClient.SqlParameter("@strForwardPE", SqlDbType.VarChar)
+            params(1).Value = strForwardPE
+            params(2) = New SqlClient.SqlParameter("@dProcessed", SqlDbType.Date)
+            params(2).Value = Today.ToShortDateString
+
+            Dim dsSPResultsPERatio As DataSet = RunSP("dbo.spUpdateForwardPE", params)
+        End If
+
         Return bitSucessful
     End Function
 
@@ -2965,9 +3632,16 @@ FAILED_TO_LOAD:
 
         '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
         'Start webclient for google
-        Dim URI As String = "https://www.google.com/finance/historical?q=" & strSymbol & "&start=0&num=200"
+        'Dim URI As String = "https://www.google.com/finance/historical?q=" & strSymbol & "&start=0&num=200"
+        Dim URI As String = "https://finance.yahoo.com/quote/" & strSymbol & "/history?period1=1496880000&period2=1512604800&interval=1wk&filter=history&frequency=1wk"
+        'https://finance.yahoo.com/quote/AAPL/history?period1=1496880000&period2=1512604800&interval=1wk&filter=history&frequency=1wk
+
 
         Dim webClient As New WebClient()
+
+        ServicePointManager.Expect100Continue = True
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+
         strResponseString = String.Empty
 
         Dim intServerRetry As Integer = 0
@@ -3006,10 +3680,10 @@ RETRY:
         Dim strTbody As String = String.Empty
         Try
             i = 1
-            i = InStr(i + 1, strResponseString, "GF-TABLE HISTORICAL_PRICE")
-            i = InStr(i + 1, strResponseString, "<TR>")
+            i = InStr(i + 1, strResponseString, "HISTORICAL-PRICES")
+            i = InStr(i + 1, strResponseString, "<TBODY ")
             i = InStr(i + 1, strResponseString, ">")
-            j = InStr(i, strResponseString, "</TABLE>")
+            j = InStr(i, strResponseString, "</TBODY>")
             strTbody = Mid(strResponseString, (i + 1), (j - i - 1)).Trim
         Catch ex As Exception
             strTbody = "0"
@@ -3017,7 +3691,7 @@ RETRY:
         '1b. do a split on the rows
         '1c. for each row get data if  not a dividend row
 
-        Dim strTableRows() As String = strTbody.Split(New String() {"<TR>"}, StringSplitOptions.RemoveEmptyEntries)
+        Dim strTableRows() As String = strTbody.Split(New String() {"<TR "}, StringSplitOptions.RemoveEmptyEntries)
 
         '2. from the same page get the close of last week
         '2a. the first row is this item
@@ -3032,15 +3706,19 @@ RETRY:
             If strTableRows(intCounter).Contains(">DIVIDEND<") = False Then
                 Try
                     i = 1
+                    i = InStr(i + 1, strTableRows(intCounter), "<TD")
+                    i = InStr(i + 1, strTableRows(intCounter), "<TD")
+                    i = InStr(i + 1, strTableRows(intCounter), "<TD")
+                    i = InStr(i + 1, strTableRows(intCounter), "<TD")
+                    i = InStr(i + 1, strTableRows(intCounter), "<TD")
+                    i = InStr(i + 1, strTableRows(intCounter), "<TD")
+                    i = InStr(i + 1, strTableRows(intCounter), "<") 'span
                     i = InStr(i + 1, strTableRows(intCounter), ">")
-                    i = InStr(i + 1, strTableRows(intCounter), ">")
-                    i = InStr(i + 1, strTableRows(intCounter), ">")
-                    i = InStr(i + 1, strTableRows(intCounter), ">")
-                    i = InStr(i + 1, strTableRows(intCounter), ">")
-                    j = InStr(i, strTableRows(intCounter), "<")
+                    j = InStr(i + 1, strTableRows(intCounter), "<")
                     decClosingPriceTemp = CDec(Mid(strTableRows(intCounter), (i + 1), (j - i - 1)).Trim)
                     intNumberOfWeeks += 1
                 Catch ex As Exception
+                    Dim x = 1
                 End Try
 
                 If intCounter = 1 Then
@@ -3055,6 +3733,75 @@ RETRY:
                 decClosingPriceTotal += decClosingPriceTemp
             End If
         Next
+
+        '3. divide P/SMA26
+        Try
+            decSMA26 = FormatNumber(decClosingPriceTotal / intNumberOfWeeks)
+            decRelativeStrength = FormatNumber(CDec(strLatestClosingPrice) / decSMA26, 4)
+        Catch ex As Exception
+        End Try
+
+FAILED_TO_LOAD:
+        If strResponseString = "FAILED_TO_LOAD" Then
+            decRelativeStrength = 0
+        End If
+
+        Dim params(2) As SqlClient.SqlParameter
+        params(0) = New SqlClient.SqlParameter("@strSymbol", SqlDbType.VarChar)
+        params(0).Value = strSymbol
+        params(1) = New SqlClient.SqlParameter("@strRelativeStrength", SqlDbType.VarChar)
+        params(1).Value = decRelativeStrength.ToString
+        params(2) = New SqlClient.SqlParameter("@dScored", SqlDbType.Date)
+        params(2).Value = Today.ToShortDateString
+        Dim dsSPResults As DataSet = RunSP("dbo.spUpdateRelativeStrength", params)
+
+        Return bitSucessful
+    End Function
+
+    Public Function CalculateRelativeStrengthJSON(ByRef strSymbol As String) As Boolean
+        Dim bitSucessful As Boolean = True
+        Dim stWorkString As String = String.Empty
+        Dim i As Integer = 1
+        Dim j As Integer = 0
+        Dim SW2 As New Stopwatch
+
+        'get UNIX time stamps :-)
+        Dim dPeriod1 As Date = DateAdd(DateInterval.Day, -182, Today) '26 weeks ago
+        Dim dPeriod2 As Date = Today
+        Dim strPeriod1 As String = GetUNIXTimeStamps(dPeriod1)
+        Dim strPeriod2 As String = GetUNIXTimeStamps(dPeriod2)
+
+        Dim decSMA26 As Decimal = 0
+        Dim decRelativeStrength As Decimal = 0
+
+        Dim strLatestClosingPrice As String = String.Empty
+        Dim decClosingPriceTotal As Decimal = 0
+        Dim decClosingPriceTemp As Decimal = 0
+        Dim intNumberOfWeeks As Integer = 26
+
+        Dim strURI = "https://query1.finance.yahoo.com/v7/finance/spark?symbols=" & strSymbol & "&range=26wk&interval=1wk&indicators=close&includeTimestamps=false&includePrePost=false&corsDomain=finance.yahoo.com&.tsrc=finance"
+        Dim strResponseString As String = GetYahooAPIData(strURI)
+        If strResponseString = "False" Then
+            'Continue For
+        End If
+
+        Try
+            Dim myCorrectContractOptionData As QuickType.HistoricalYahooClosePrices = QuickType.HistoricalYahooClosePrices.FromJson(strResponseString)
+            Dim y = 1
+
+            If myCorrectContractOptionData.Spark.Error = Nothing Then
+                For Each myPrice In myCorrectContractOptionData.Spark.Result(0).Response(0).Indicators.Quote(0).Close
+                    If IsNumeric(myPrice) = True Then
+                        decClosingPriceTotal += myPrice
+
+                        strLatestClosingPrice = myPrice
+                    End If
+                Next
+            End If
+
+        Catch ex As Exception
+            Dim x = 1
+        End Try
 
         '3. divide P/SMA26
         Try
@@ -3215,6 +3962,10 @@ FAILED_TO_LOAD:
         Dim URI As String = "https://biz.yahoo.com/p/sum_conameu.html"
 
         Dim webClient As New WebClient()
+
+        ServicePointManager.Expect100Continue = True
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12
+
         strResponseString = String.Empty
 
         Dim intServerRetry As Integer = 0
@@ -3853,5 +4604,7 @@ TRY_AGAIN:
     End Function
 
 #End Region
+
+
 
 End Class

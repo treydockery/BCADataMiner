@@ -100,6 +100,8 @@ Partial Class Main
         'cbForceRS
         '
         Me.cbForceRS.AutoSize = True
+        Me.cbForceRS.Checked = True
+        Me.cbForceRS.CheckState = System.Windows.Forms.CheckState.Checked
         Me.cbForceRS.Font = New System.Drawing.Font("Microsoft Sans Serif", 12.0!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
         Me.cbForceRS.Location = New System.Drawing.Point(924, 104)
         Me.cbForceRS.Name = "cbForceRS"
